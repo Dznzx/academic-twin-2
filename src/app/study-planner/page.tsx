@@ -1,117 +1,200 @@
-// src/app/study-planner/page.tsx
 "use client";
+import { useState, useEffect } from "react";
+import { CalendarDays, Plus, Trash2, CheckCircle, Circle, Loader2 } from "lucide-react";
 
-import { useState } from "react";
-import { CalendarDays, Plus, Clock, CheckCircle, Circle, AlertCircle } from "lucide-react";
-import { Priority, TaskStatus } from "@/types";
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  priority: "LOW" | "MEDIUM" | "HIGH";
+}
 
-const mockTasks = [
-  { id: "1", title: "Review Chapter 5 — Machine Learning Basics", dueDate: new Date(), duration: 60, priority: "HIGH" as Priority, status: "PENDING" as TaskStatus, subject: "ML" },
-  { id: "2", title: "Complete Linear Algebra practice problems", dueDate: new Date(), duration: 45, priority: "MEDIUM" as Priority, status: "IN_PROGRESS" as TaskStatus, subject: "Math" },
-  { id: "3", title: "Revise Data Structures flashcards", dueDate: new Date(), duration: 30, priority: "LOW" as Priority, status: "COMPLETED" as TaskStatus, subject: "CS" },
-];
+interface Plan {
+  id: string;
+  title: string;
+  tasks: Task[];
+}
 
-const priorityColors: Record<Priority, string> = {
-  HIGH: "text-red-600 bg-red-50",
-  MEDIUM: "text-yellow-600 bg-yellow-50",
-  LOW: "text-green-600 bg-green-50",
-};
-
-const statusIcons: Record<TaskStatus, React.ElementType> = {
-  PENDING: Circle,
-  IN_PROGRESS: AlertCircle,
-  COMPLETED: CheckCircle,
-};
-
-const statusColors: Record<TaskStatus, string> = {
-  PENDING: "text-muted-foreground",
-  IN_PROGRESS: "text-blue-500",
-  COMPLETED: "text-green-500",
+const priorityConfig = {
+  HIGH: { label: "High", className: "bg-red-400/10 text-red-400 border-red-400/30" },
+  MEDIUM: { label: "Medium", className: "bg-amber-400/10 text-amber-400 border-amber-400/30" },
+  LOW: { label: "Low", className: "bg-emerald-400/10 text-emerald-400 border-emerald-400/30" },
 };
 
 export default function StudyPlannerPage() {
-  const [tasks, setTasks] = useState(mockTasks);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
 
-  function toggleStatus(id: string) {
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const next: Record<TaskStatus, TaskStatus> = {
-          PENDING: "IN_PROGRESS",
-          IN_PROGRESS: "COMPLETED",
-          COMPLETED: "PENDING",
-        };
-        return { ...t, status: next[t.status] };
-      })
-    );
-  }
+  const fetchPlans = () => {
+    fetch("/api/study-planner")
+      .then((r) => r.json())
+      .then((d) => setPlans(d.data ?? d.plans ?? []))
+      .finally(() => setLoading(false));
+  };
 
-  const today = tasks.filter((t) => t.status !== "COMPLETED");
-  const done = tasks.filter((t) => t.status === "COMPLETED");
-  const totalMinutes = today.reduce((s, t) => s + t.duration, 0);
+  useEffect(() => { fetchPlans(); }, []);
+
+  const tasks: Task[] = plans.flatMap((p) => p.tasks ?? []);
+
+  const addTask = async () => {
+    if (!title.trim()) return;
+    const res = await fetch("/api/study-planner/quick-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, dueDate, priority }),
+    });
+    if (res.ok) {
+      fetchPlans();
+      setTitle(""); setDescription(""); setDueDate(""); setPriority("MEDIUM"); setAdding(false);
+    } else {
+      alert("Failed to add task.");
+    }
+  };
+
+  const toggleTask = async (task: Task) => {
+    await fetch(`/api/study-planner/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: task.status === "COMPLETED" ? "PENDING" : "COMPLETED" }),
+    });
+    fetchPlans();
+  };
+
+  const deleteTask = async (id: string) => {
+    await fetch(`/api/study-planner/tasks/${id}`, { method: "DELETE" });
+    fetchPlans();
+  };
+
+  const pending = tasks.filter((t) => t.status !== "COMPLETED");
+  const completed = tasks.filter((t) => t.status === "COMPLETED");
 
   return (
-    <div className="p-6 max-w-3xl">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Study Planner</h1>
-          <p className="mt-1 text-muted-foreground">
-            {today.length} tasks remaining · {Math.floor(totalMinutes / 60)}h {totalMinutes % 60}m estimated
-          </p>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between h-14 px-6 border-b border-border glass shrink-0">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium text-foreground">Study Planner</h1>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Plus className="h-4 w-4" /> Add Task
+        <button onClick={() => setAdding((p) => !p)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-all duration-200">
+          <Plus className="h-3.5 w-3.5" /> Add task
         </button>
       </div>
 
-      {/* Today's tasks */}
-      <div className="space-y-3 mb-8">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Today</h2>
-        {today.map((task) => {
-          const StatusIcon = statusIcons[task.status];
-          return (
-            <div key={task.id} className="flex items-start gap-4 rounded-xl border bg-card p-4 hover:shadow-sm transition-shadow">
-              <button onClick={() => toggleStatus(task.id)} className={`mt-0.5 ${statusColors[task.status]}`}>
-                <StatusIcon className="h-5 w-5" />
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium text-sm ${task.status === "COMPLETED" ? "line-through text-muted-foreground" : ""}`}>
-                  {task.title}
-                </p>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {task.duration}m
-                  </span>
-                  {task.subject && <span className="rounded-full bg-muted px-2 py-0.5">{task.subject}</span>}
-                </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-2xl mx-auto space-y-5">
+
+          {adding && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <h3 className="text-sm font-medium text-foreground">New task</h3>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Task title..."
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+              />
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Description (optional)..."
+                rows={2}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                />
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as any)}
+                  className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                >
+                  <option value="LOW">Low priority</option>
+                  <option value="MEDIUM">Medium priority</option>
+                  <option value="HIGH">High priority</option>
+                </select>
               </div>
-              <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${priorityColors[task.priority]}`}>
-                {task.priority}
-              </span>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-md border border-border text-xs text-muted-foreground hover:bg-secondary transition-colors">Cancel</button>
+                <button onClick={addTask} disabled={!title.trim()} className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">Add task</button>
+              </div>
             </div>
-          );
-        })}
+          )}
+
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-border bg-card">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 gold-glow">
+                <CalendarDays className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground">No tasks yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Add a study task to get organized.</p>
+            </div>
+          ) : (
+            <>
+              {pending.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pending · {pending.length}</p>
+                  <div className="space-y-2">
+                    {pending.map((task) => (
+                      <div key={task.id} className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 group">
+                        <button onClick={() => toggleTask(task)} className="shrink-0 text-muted-foreground hover:text-primary transition-colors mt-0.5">
+                          <Circle className="h-4 w-4" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground font-medium">{task.title}</p>
+                          {task.description && <p className="text-xs text-muted-foreground/80 mt-0.5">{task.description}</p>}
+                          {task.dueDate && <p className="text-xs text-muted-foreground mt-0.5">Due {new Date(task.dueDate).toLocaleDateString()}</p>}
+                        </div>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${priorityConfig[task.priority]?.className ?? priorityConfig.MEDIUM.className}`}>
+                          {priorityConfig[task.priority]?.label ?? "Medium"}
+                        </span>
+                        <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 shrink-0">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {completed.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Completed · {completed.length}</p>
+                  <div className="space-y-2">
+                    {completed.map((task) => (
+                      <div key={task.id} className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3 opacity-60 group">
+                        <button onClick={() => toggleTask(task)} className="shrink-0 text-emerald-400 mt-0.5">
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground line-through">{task.title}</p>
+                          {task.description && <p className="text-xs text-muted-foreground/60 mt-0.5 line-through">{task.description}</p>}
+                        </div>
+                        <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 shrink-0">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-
-      {done.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Completed</h2>
-          {done.map((task) => (
-            <div key={task.id} className="flex items-center gap-4 rounded-xl border bg-muted/40 p-4 opacity-60">
-              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-              <p className="text-sm line-through text-muted-foreground">{task.title}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tasks.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <CalendarDays className="mb-4 h-12 w-12 text-muted-foreground/40" />
-          <h2 className="font-semibold mb-1">No tasks planned</h2>
-          <p className="text-sm text-muted-foreground">Add tasks to start planning your study schedule</p>
-        </div>
-      )}
     </div>
   );
 }

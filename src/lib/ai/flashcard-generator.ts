@@ -1,6 +1,7 @@
-// src/lib/ai/flashcard-generator.ts
-import { openai } from "./openai";
+import Groq from "groq-sdk";
 import { Flashcard } from "@/types";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 interface GenerateFlashcardsParams {
   content: string;
@@ -19,7 +20,7 @@ Create ${count} flashcards from this academic content using active recall and sp
 Document: "${documentTitle}"
 
 CONTENT:
-${content.substring(0, 8000)}
+${content.substring(0, 6000)}
 
 Rules:
 - Front: concise, specific question or term (max 100 chars)
@@ -27,7 +28,7 @@ Rules:
 - Cover definitions, concepts, formulas, relationships, and key facts
 - Use "What is...", "Explain...", "How does...", "What are the steps..."
 
-Respond ONLY with a valid JSON array:
+Respond ONLY with a valid JSON array, no markdown fences, no extra text:
 [
   {
     "front": "What is Retrieval-Augmented Generation (RAG)?",
@@ -35,21 +36,23 @@ Respond ONLY with a valid JSON array:
   }
 ]
 
-Return ONLY the JSON array, no other text.`;
+Return ONLY the JSON array, no other text, no markdown code fences.`;
 
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL ?? "gpt-4o",
+  const response = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
     messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
     temperature: 0.6,
+    max_tokens: 4000,
   });
 
-  const raw = response.choices[0].message.content ?? "{}";
+  let raw = response.choices[0]?.message?.content ?? "[]";
+  raw = raw.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
 
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : parsed.flashcards ?? [];
-  } catch {
+  } catch (err) {
+    console.error("[generateFlashcards] Failed to parse:", raw);
     throw new Error("Failed to parse flashcards from AI response");
   }
 }

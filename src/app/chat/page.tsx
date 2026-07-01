@@ -1,179 +1,150 @@
-// src/app/chat/page.tsx
 "use client";
-
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Bot, User, BookOpen, Plus } from "lucide-react";
-import { cn, formatRelativeDate } from "@/lib/utils";
-import { ChatMessage, CitationSource } from "@/types";
+import { MessageSquare, Send, Plus, Zap } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+const QUICK_PROMPTS = [
+  "Check in on me — how am I doing?",
+  "What should I focus on today?",
+  "I need motivation right now",
+  "Am I behind on anything?",
+];
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { user } = useUser();
+  const firstName = user?.firstName ?? "there";
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    const message = input.trim();
-    if (!message || isLoading) return;
-
-    setInput("");
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      sessionId: sessionId ?? "",
-      role: "USER",
-      content: message,
-      createdAt: new Date(),
-    };
+  const send = async (overrideMessage?: string) => {
+    const text = (overrideMessage ?? input).trim();
+    if (!text || loading) return;
+    const userMsg: Message = { role: "user", content: text };
     setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
-    const assistantMsg: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      sessionId: sessionId ?? "",
-      role: "ASSISTANT",
-      content: "",
-      createdAt: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
+    setInput("");
+    setLoading(true);
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, sessionId }),
+        body: JSON.stringify({ message: text }),
       });
 
+      if (!res.ok) throw new Error("Failed");
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      if (!reader) throw new Error("No reader");
 
-      while (reader) {
+      while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.sessionId && !sessionId) setSessionId(parsed.sessionId);
-            if (parsed.content) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  content: updated[updated.length - 1].content + parsed.content,
-                };
-                return updated;
-              });
-            }
-            if (parsed.sources) {
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  sources: parsed.sources,
-                };
-                return updated;
-              });
-            }
-          } catch {}
+        const chunk = decoder.decode(value);
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = {
+                    role: "assistant",
+                    content: updated[updated.length - 1].content + parsed.content,
+                  };
+                  return updated;
+                });
+              }
+            } catch {}
+          }
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: "Something went wrong. Please try again." };
+        return updated;
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-4">
-        <div>
-          <h1 className="font-semibold text-lg">AI Chat</h1>
-          <p className="text-sm text-muted-foreground">Ask questions about your uploaded documents</p>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between h-14 px-6 border-b border-border glass shrink-0">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium text-foreground">AI Chat</h1>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20">Study Assistant</span>
         </div>
         <button
-          onClick={() => { setMessages([]); setSessionId(null); }}
-          className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm hover:bg-muted transition-colors"
+          onClick={() => setMessages([])}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:bg-secondary transition-all duration-200"
         >
-          <Plus className="h-4 w-4" /> New Chat
+          <Plus className="h-3.5 w-3.5" /> New chat
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <Bot className="h-7 w-7 text-primary" />
+          <div className="flex flex-col items-center justify-center h-full text-center py-10 fade-in">
+            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 gold-glow">
+              <MessageSquare className="h-7 w-7 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold mb-2">Your Academic Twin</h2>
-            <p className="text-muted-foreground max-w-md">
-              Ask me anything about your uploaded documents. I'll answer using your materials and cite my sources.
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-3 max-w-lg w-full">
-              {["Summarize Chapter 4", "What are the key concepts?", "Give me practice examples", "Compare these two topics"].map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => setInput(prompt)}
-                  className="rounded-lg border bg-card p-3 text-sm text-left hover:bg-muted transition-colors"
-                >
-                  {prompt}
-                </button>
-              ))}
+            <p className="text-base font-medium text-foreground">Hey {firstName} 👋</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">I'm your Academic Twin — your personal AI study assistant. Ask me anything, or let me check in on your progress.</p>
+
+            <div className="mt-8 w-full max-w-md">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5 justify-center">
+                <Zap className="h-3.5 w-3.5 text-primary" /> Quick actions
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {QUICK_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => send(prompt)}
+                    className="text-left px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-secondary transition-all duration-200 group"
+                  >
+                    <span className="text-primary mr-2 group-hover:mr-3 transition-all duration-200">&rarr;</span>
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {messages.map((msg) => (
-          <div key={msg.id} className={cn("flex gap-3", msg.role === "USER" ? "flex-row-reverse" : "flex-row")}>
-            <div className={cn(
-              "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm",
-              msg.role === "USER" ? "bg-primary text-primary-foreground" : "bg-muted"
-            )}>
-              {msg.role === "USER" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-            </div>
-            <div className={cn("max-w-[70%] space-y-2", msg.role === "USER" ? "items-end" : "items-start")}>
-              <div className={cn(
-                "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                msg.role === "USER"
-                  ? "bg-primary text-primary-foreground rounded-tr-sm"
-                  : "bg-muted text-foreground rounded-tl-sm"
-              )}>
-                {msg.content || (isLoading && msg.role === "ASSISTANT" && (
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
-                  </span>
-                ))}
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex gap-3 fade-in ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "assistant" && (
+              <div className="h-7 w-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5 gold-glow">
+                <MessageSquare className="h-3.5 w-3.5 text-primary" />
               </div>
-
-              {/* Sources */}
-              {msg.sources && msg.sources.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" /> Sources
-                  </p>
-                  {msg.sources.map((s: CitationSource, i: number) => (
-                    <div key={i} className="rounded-md border bg-card px-3 py-2 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">{s.documentTitle}</span>
-                      {s.pageNumber && <span> — Page {s.pageNumber}</span>}
-                    </div>
-                  ))}
+            )}
+            <div className={`max-w-[72%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+              msg.role === "user"
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-foreground"
+            }`}>
+              {msg.content || (
+                <div className="flex gap-1 py-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:300ms]" />
                 </div>
               )}
             </div>
@@ -182,24 +153,25 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t bg-background px-6 py-4">
-        <form onSubmit={sendMessage} className="flex gap-3">
-          <input
+      <div className="shrink-0 px-6 py-4 border-t border-border glass">
+        <div className="flex items-end gap-3 rounded-xl border border-border bg-card px-4 py-3 focus-within:border-primary/50 transition-all duration-200">
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything about your documents..."
-            className="flex-1 rounded-xl border bg-muted px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary transition-all"
-            disabled={isLoading}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Ask anything or request a study check-in..."
+            rows={1}
+            className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-[24px] max-h-[120px]"
           />
           <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            onClick={() => send()}
+            disabled={!input.trim() || loading}
+            className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 gold-glow shrink-0"
           >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Send className="h-3.5 w-3.5" />
           </button>
-        </form>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 text-center">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );

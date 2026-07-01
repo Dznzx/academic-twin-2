@@ -1,57 +1,52 @@
-// ──────────────────────────────────────────────
-// Academic Twin — Prisma Schema
-// ──────────────────────────────────────────────
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// ── Users ────────────────────────────────────
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  documents    Document[]
-  chatSessions ChatSession[]
-  quizAttempts QuizAttempt[]
+  notes Note[]
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  email         String         @unique
+  name          String?
+  avatar        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  chatSessions  ChatSession[]
+  documents     Document[]
   flashcardSets FlashcardSet[]
-  studyPlans   StudyPlan[]
-  analytics    UserAnalytics?
+  quizAttempts  QuizAttempt[]
+  studyPlans    StudyPlan[]
+  analytics     UserAnalytics?
 
   @@map("users")
 }
 
-// ── Documents ────────────────────────────────
 model Document {
-  id          String         @id @default(cuid())
-  userId      String
-  title       String
-  fileName    String
-  fileUrl     String
-  fileSize    Int
-  mimeType    String
-  status      DocumentStatus @default(PROCESSING)
-  pageCount   Int?
-  wordCount   Int?
-  subject     String?
-  tags        String[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chunks   DocumentChunk[]
-  quizzes  Quiz[]
+  notes Note[]
+  id            String          @id @default(cuid())
+  userId        String
+  title         String
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  mimeType      String
+  status        DocumentStatus  @default(PROCESSING)
+  pageCount     Int?
+  wordCount     Int?
+  subject       String?
+  tags          String[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  chunks        DocumentChunk[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   flashcardSets FlashcardSet[]
+  quizzes       Quiz[]
 
   @@map("documents")
 }
@@ -62,30 +57,21 @@ model DocumentChunk {
   content    String
   chunkIndex Int
   pageNumber Int?
-  embedding  String?  // stored as JSON array string
+  embedding  String?
   createdAt  DateTime @default(now())
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("document_chunks")
 }
 
-enum DocumentStatus {
-  PROCESSING
-  READY
-  FAILED
-}
-
-// ── Chat ─────────────────────────────────────
 model ChatSession {
-  id        String    @id @default(cuid())
+  id        String        @id @default(cuid())
   userId    String
-  title     String    @default("New Chat")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
+  title     String        @default("New Chat")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chat_sessions")
 }
@@ -95,31 +81,22 @@ model ChatMessage {
   sessionId String
   role      MessageRole
   content   String
-  sources   Json?       // cited document chunks
+  sources   Json?
   createdAt DateTime    @default(now())
-
-  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
 }
 
-enum MessageRole {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
-// ── Quizzes ───────────────────────────────────
 model Quiz {
-  id         String     @id @default(cuid())
+  id         String         @id @default(cuid())
   documentId String
   title      String
   difficulty QuizDifficulty @default(MEDIUM)
-  createdAt  DateTime   @default(now())
-
-  document  Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  questions QuizQuestion[]
-  attempts  QuizAttempt[]
+  createdAt  DateTime       @default(now())
+  attempts   QuizAttempt[]
+  questions  QuizQuestion[]
+  document   Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@map("quizzes")
 }
@@ -129,45 +106,154 @@ model QuizQuestion {
   quizId        String
   type          QuestionType
   question      String
-  options       Json?        // array of strings for MCQ
+  options       Json?
   correctAnswer String
   explanation   String?
   points        Int          @default(1)
-
-  quiz    Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers QuizAnswer[]
+  answers       QuizAnswer[]
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@map("quiz_questions")
 }
 
 model QuizAttempt {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   userId      String
   quizId      String
   score       Int
   totalPoints Int
   percentage  Float
-  timeTaken   Int?     // seconds
-  completedAt DateTime @default(now())
-
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  answers QuizAnswer[]
+  timeTaken   Int?
+  completedAt DateTime     @default(now())
+  answers     QuizAnswer[]
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("quiz_attempts")
 }
 
 model QuizAnswer {
-  id         String  @id @default(cuid())
+  id         String       @id @default(cuid())
   attemptId  String
   questionId String
   answer     String
   isCorrect  Boolean
-
-  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt    QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@map("quiz_answers")
+}
+
+model FlashcardSet {
+  id          String      @id @default(cuid())
+  userId      String
+  documentId  String?
+  title       String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  document    Document?   @relation(fields: [documentId], references: [id])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards       Flashcard[]
+
+  @@map("flashcard_sets")
+}
+
+model Flashcard {
+  id          String       @id @default(cuid())
+  setId       String
+  front       String
+  back        String
+  difficulty  Int          @default(0)
+  nextReview  DateTime     @default(now())
+  reviewCount Int          @default(0)
+  createdAt   DateTime     @default(now())
+  set         FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@map("flashcards")
+}
+
+model StudyPlan {
+  id        String      @id @default(cuid())
+  userId    String
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks     StudyTask[]
+
+  @@map("study_plans")
+}
+
+model StudyTask {
+  id          String     @id @default(cuid())
+  planId      String
+  title       String
+  description String?
+  dueDate     DateTime
+  duration    Int
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(PENDING)
+  subject     String?
+  plan        StudyPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("study_tasks")
+}
+
+model UserAnalytics {
+  id                 String         @id @default(cuid())
+  userId             String         @unique
+  totalStudyTime     Int            @default(0)
+  documentsUploaded  Int            @default(0)
+  quizzesCompleted   Int            @default(0)
+  avgQuizScore       Float          @default(0)
+  flashcardsReviewed Int            @default(0)
+  chatMessages       Int            @default(0)
+  currentStreak      Int            @default(0)
+  longestStreak      Int            @default(0)
+  lastActiveAt       DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  studySessions      StudySession[]
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weakTopics         WeakTopic[]
+
+  @@map("user_analytics")
+}
+
+model WeakTopic {
+  id          String        @id @default(cuid())
+  analyticsId String
+  topic       String
+  score       Float
+  subject     String?
+  analytics   UserAnalytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+
+  @@map("weak_topics")
+}
+
+model StudySession {
+  id          String        @id @default(cuid())
+  analyticsId String
+  date        DateTime      @default(now())
+  duration    Int
+  subject     String?
+  analytics   UserAnalytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+
+  @@map("study_sessions")
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
 }
 
 enum QuizDifficulty {
@@ -182,70 +268,6 @@ enum QuestionType {
   TRUE_FALSE
 }
 
-// ── Flashcards ────────────────────────────────
-model FlashcardSet {
-  id         String   @id @default(cuid())
-  userId     String
-  documentId String?
-  title      String
-  description String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document  Document?  @relation(fields: [documentId], references: [id], onDelete: SetNull)
-  cards     Flashcard[]
-
-  @@map("flashcard_sets")
-}
-
-model Flashcard {
-  id         String   @id @default(cuid())
-  setId      String
-  front      String
-  back       String
-  difficulty Int      @default(0) // spaced repetition difficulty
-  nextReview DateTime @default(now())
-  reviewCount Int     @default(0)
-  createdAt  DateTime @default(now())
-
-  set FlashcardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
-
-  @@map("flashcards")
-}
-
-// ── Study Planner ─────────────────────────────
-model StudyPlan {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tasks StudyTask[]
-
-  @@map("study_plans")
-}
-
-model StudyTask {
-  id          String     @id @default(cuid())
-  planId      String
-  title       String
-  description String?
-  dueDate     DateTime
-  duration    Int        // minutes
-  priority    Priority   @default(MEDIUM)
-  status      TaskStatus @default(PENDING)
-  subject     String?
-
-  plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-
-  @@map("study_tasks")
-}
-
 enum Priority {
   LOW
   MEDIUM
@@ -258,48 +280,19 @@ enum TaskStatus {
   COMPLETED
 }
 
-// ── Analytics ─────────────────────────────────
-model UserAnalytics {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  totalStudyTime     Int      @default(0) // minutes
-  documentsUploaded  Int      @default(0)
-  quizzesCompleted   Int      @default(0)
-  avgQuizScore       Float    @default(0)
-  flashcardsReviewed Int      @default(0)
-  chatMessages       Int      @default(0)
-  currentStreak      Int      @default(0)
-  longestStreak      Int      @default(0)
-  lastActiveAt       DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  documentId String?
+  title     String
+  topic     String
+  style     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weakTopics   WeakTopic[]
-  studySessions StudySession[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
-  @@map("user_analytics")
-}
-
-model WeakTopic {
-  id          String @id @default(cuid())
-  analyticsId String
-  topic       String
-  score       Float
-  subject     String?
-
-  analytics UserAnalytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
-
-  @@map("weak_topics")
-}
-
-model StudySession {
-  id          String   @id @default(cuid())
-  analyticsId String
-  date        DateTime @default(now())
-  duration    Int      // minutes
-  subject     String?
-
-  analytics UserAnalytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
-
-  @@map("study_sessions")
+  @@map("notes")
 }

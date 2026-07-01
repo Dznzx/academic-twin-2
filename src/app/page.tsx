@@ -1,138 +1,145 @@
 import Link from "next/link";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import { Brain, MessageSquare, CheckSquare, Layers, FileText, BarChart2, CalendarDays, ArrowRight, Sparkles } from "lucide-react";
+import { Brain, ArrowRight, FileText, MessageSquare, CheckSquare, Layers, BarChart2, CalendarDays } from "lucide-react";
 
-export default async function LandingPage() {
-  const { userId } = await auth();
-  if (userId) redirect("/dashboard");
+const features = [
+  { icon: MessageSquare, label: "AI chat", desc: "Ask questions directly about your uploaded documents and get instant, accurate answers.", color: "bg-blue-50 text-blue-600" },
+  { icon: CheckSquare, label: "Smart quizzes", desc: "Auto-generated quizzes from your content. Test yourself and track weak areas.", color: "bg-green-50 text-green-600" },
+  { icon: Layers, label: "Flashcards", desc: "AI-generated flashcard decks from your notes for efficient spaced repetition.", color: "bg-purple-50 text-purple-600" },
+  { icon: CalendarDays, label: "Study planner", desc: "Structured study plans built around your documents and exam dates.", color: "bg-amber-50 text-amber-600" },
+  { icon: BarChart2, label: "Analytics", desc: "Track study time, quiz scores, and progress across all your subjects.", color: "bg-teal-50 text-teal-600" },
+  { icon: FileText, label: "Document upload", desc: "Support for PDFs, slides, and text files. Your AI learns from your exact materials.", color: "bg-red-50 text-red-600" },
+];
 
-  const features = [
-    { icon: MessageSquare, title: "AI chat assistant", description: "Ask anything about your documents. Get cited, accurate answers instantly." },
-    { icon: CheckSquare, title: "Quiz generator", description: "Auto-generate MCQ, short answer, and true/false quizzes from any doc." },
-    { icon: Layers, title: "Flashcard sets", description: "Turn key concepts into flashcards for active recall and spaced repetition." },
-    { icon: FileText, title: "Smart summaries", description: "Chapter summaries, key points, and formula sheets in seconds." },
-    { icon: BarChart2, title: "Learning analytics", description: "Track your study time, quiz scores, weak topics, and streak." },
-    { icon: CalendarDays, title: "Study planner", description: "AI-recommended daily schedules based on your performance and deadlines." },
-  ];
+const steps = [
+  { n: "1", title: "Upload your material", desc: "Drop in any PDF, slide deck, or notes. Your AI twin reads and indexes everything." },
+  { n: "2", title: "Chat, quiz, and review", desc: "Ask questions, generate quizzes, or build flashcard decks — all from your documents." },
+  { n: "3", title: "Track your progress", desc: "See what you know and where to focus. Study smarter, not harder." },
+];
 
+export default function LandingPage() {
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif", background: "#0a0f1e", color: "#f1f5f9" }}>
-
+    <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(10,15,30,0.85)", backdropFilter: "blur(12px)" }}>
-        <div style={{ maxWidth: 1024, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 56 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Brain size={15} color="white" />
-            </div>
-            <span style={{ fontWeight: 600, fontSize: 14, color: "#f1f5f9" }}>Academic Twin</span>
+      <header className="sticky top-0 z-20 flex items-center h-14 px-8 border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center gap-2.5 flex-1">
+          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
+            <Brain className="h-4 w-4 text-primary-foreground" />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/auth/login" style={{ fontSize: 14, color: "#94a3b8", textDecoration: "none", padding: "6px 12px" }}>Sign in</Link>
-            <Link href="/auth/register" style={{ fontSize: 14, fontWeight: 500, background: "#6366f1", color: "white", textDecoration: "none", padding: "8px 16px", borderRadius: 8, display: "flex", alignItems: "center", gap: 6 }}>Get started free</Link>
-          </div>
+          <span className="text-sm font-medium text-foreground">Academic Twin</span>
         </div>
-      </nav>
+        <nav className="hidden md:flex items-center gap-6 mr-8">
+          {["Features", "How it works", "Pricing"].map((item) => (
+            <a key={item} href={`#${item.toLowerCase().replace(" ", "-")}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2">
+          <Link href="/auth/login" className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            Sign in
+          </Link>
+          <Link href="/auth/register" className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            Get started free
+          </Link>
+        </div>
+      </header>
 
       {/* Hero */}
-      <section style={{ maxWidth: 720, margin: "0 auto", padding: "100px 24px 60px", textAlign: "center" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(99,102,241,0.15)", color: "#818cf8", fontSize: 12, fontWeight: 500, padding: "5px 14px", borderRadius: 20, marginBottom: 28, border: "1px solid rgba(99,102,241,0.3)" }}>
-          <Sparkles size={12} />Built for students, powered by AI
+      <section className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-muted text-xs text-muted-foreground mb-8">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          Built for students, powered by AI
         </div>
-        <h1 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.1, letterSpacing: "-1px", marginBottom: 20, color: "#f8fafc" }}>
-          Study smarter with your{" "}
-          <span style={{ color: "#818cf8" }}>personal AI tutor</span>
+        <h1 className="text-5xl font-medium tracking-tight text-foreground leading-tight mb-6">
+          Study smarter with your<br />
+          <span className="text-primary">personal AI tutor</span>
         </h1>
-        <p style={{ fontSize: 18, color: "#94a3b8", lineHeight: 1.7, marginBottom: 36 }}>
+        <p className="text-base text-muted-foreground leading-relaxed max-w-xl mx-auto mb-10">
           Upload your notes, textbooks, or slides and get an AI that knows your material. Chat, quiz yourself, make flashcards, and actually understand what you are studying.
         </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link href="/auth/register" style={{ display: "flex", alignItems: "center", gap: 8, background: "#6366f1", color: "white", textDecoration: "none", padding: "13px 30px", borderRadius: 12, fontSize: 15, fontWeight: 600 }}>
-            Start for free <ArrowRight size={16} />
+        <div className="flex items-center justify-center gap-3">
+          <Link href="/auth/register" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+            Start for free <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link href="#features" style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", color: "#e2e8f0", textDecoration: "none", padding: "13px 30px", borderRadius: 12, fontSize: 15, fontWeight: 600, border: "1px solid rgba(255,255,255,0.1)" }}>
+          <a href="#how-it-works" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border text-sm text-foreground hover:bg-muted transition-colors">
             See how it works
-          </Link>
+          </a>
         </div>
       </section>
 
       {/* Stats */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ maxWidth: 1024, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="border-y border-border bg-card">
+        <div className="max-w-4xl mx-auto grid grid-cols-4 divide-x divide-border">
           {[
             { val: "RAG", label: "Powered retrieval" },
             { val: "3", label: "Document formats" },
             { val: "6", label: "Study tools" },
             { val: "GPT-4o", label: "AI backbone" },
-          ].map((s, i) => (
-            <div key={s.label} style={{ padding: "28px 16px", textAlign: "center", borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#818cf8" }}>{s.val}</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{s.label}</div>
+          ].map(({ val, label }) => (
+            <div key={label} className="py-8 text-center">
+              <p className="text-lg font-medium text-primary">{val}</p>
+              <p className="text-xs text-muted-foreground mt-1">{label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Features */}
-      <section id="features" style={{ maxWidth: 1024, margin: "0 auto", padding: "80px 24px" }}>
-        <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#818cf8", marginBottom: 12 }}>Features</div>
-        <h2 style={{ fontSize: 32, fontWeight: 700, color: "#f8fafc", marginBottom: 8 }}>Everything you need to ace your exams</h2>
-        <p style={{ fontSize: 16, color: "#94a3b8", marginBottom: 40 }}>One place for all your study tools — powered by your own materials.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-          {features.map(({ icon: Icon, title, description }) => (
-            <div key={title} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 22 }}>
-              <div style={{ width: 38, height: 38, background: "rgba(99,102,241,0.15)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14, color: "#818cf8" }}>
-                <Icon size={18} />
+      <section id="features" className="max-w-4xl mx-auto px-6 py-20">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Features</p>
+        <h2 className="text-2xl font-medium text-foreground mb-2">Everything you need to ace your exams</h2>
+        <p className="text-sm text-muted-foreground mb-10">One place for all your study tools — powered by your own materials.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {features.map(({ icon: Icon, label, desc, color }) => (
+            <div key={label} className="rounded-xl border border-border bg-card p-5">
+              <div className={`h-9 w-9 rounded-lg flex items-center justify-center mb-4 ${color}`}>
+                <Icon className="h-4.5 w-4.5" />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#f1f5f9", marginBottom: 6 }}>{title}</div>
-              <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>{description}</div>
+              <p className="text-sm font-medium text-foreground mb-1.5">{label}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How it works */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ maxWidth: 1024, margin: "0 auto", padding: "80px 24px" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "#818cf8", marginBottom: 12 }}>How it works</div>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: "#f8fafc", marginBottom: 40 }}>From upload to mastery in minutes</h2>
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, overflow: "hidden" }}>
-            {[
-              { num: "1", title: "Upload your materials", desc: "Add PDFs, lecture notes, or textbooks. Any academic document works." },
-              { num: "2", title: "AI reads and indexes everything", desc: "Your documents get chunked, embedded, and stored for instant retrieval." },
-              { num: "3", title: "Study interactively", desc: "Chat, take quizzes, review flashcards, and track your progress from one dashboard." },
-            ].map(({ num, title, desc }, i) => (
-              <div key={num} style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: "22px 24px", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                <div style={{ minWidth: 32, height: 32, borderRadius: "50%", background: "#6366f1", color: "white", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{num}</div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#f1f5f9", marginBottom: 4 }}>{title}</div>
-                  <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6 }}>{desc}</div>
-                </div>
+      <section id="how-it-works" className="border-y border-border bg-card">
+        <div className="max-w-4xl mx-auto px-6 py-20">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3 text-center">How it works</p>
+          <h2 className="text-2xl font-medium text-foreground mb-12 text-center">Three steps to study smarter</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-border">
+            {steps.map(({ n, title, desc }) => (
+              <div key={n} className="px-8 py-6 first:pl-0 last:pr-0">
+                <div className="h-7 w-7 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary mb-4">{n}</div>
+                <p className="text-sm font-medium text-foreground mb-2">{title}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* CTA */}
-      <section style={{ padding: "0 24px 80px" }}>
-        <div style={{ maxWidth: 1024, margin: "0 auto", background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", borderRadius: 20, padding: "60px 32px", textAlign: "center" }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, color: "white", marginBottom: 12 }}>Ready to meet your Academic Twin?</h2>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 16, marginBottom: 28 }}>Free to start. No credit card needed.</p>
-          <Link href="/auth/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "white", color: "#4f46e5", textDecoration: "none", padding: "13px 32px", borderRadius: 12, fontSize: 15, fontWeight: 700 }}>
-            Create your account <ArrowRight size={16} />
-          </Link>
-        </div>
+      <section className="max-w-4xl mx-auto px-6 py-24 text-center">
+        <h2 className="text-2xl font-medium text-foreground mb-3">Ready to study smarter?</h2>
+        <p className="text-sm text-muted-foreground mb-8">Join students who are already using Academic Twin to ace their exams.</p>
+        <Link href="/auth/register" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+          Get started free <ArrowRight className="h-4 w-4" />
+        </Link>
       </section>
 
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{ maxWidth: 1024, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#475569" }}>
-            <Brain size={16} /> Academic Twin
+      <footer className="border-t border-border bg-card">
+        <div className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-5 w-5 rounded-md bg-primary flex items-center justify-center">
+              <Brain className="h-3 w-3 text-primary-foreground" />
+            </div>
+            Academic Twin
           </div>
-          <p style={{ fontSize: 12, color: "#475569" }}>Built with Next.js, Clerk, Supabase & Pinecone</p>
+          <div className="flex gap-6">
+            {["Privacy", "Terms", "Contact"].map((item) => (
+              <a key={item} href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">{item}</a>
+            ))}
+          </div>
         </div>
       </footer>
     </div>

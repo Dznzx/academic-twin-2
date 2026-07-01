@@ -1,250 +1,303 @@
-// src/app/quiz/page.tsx
 "use client";
-
 import { useState, useEffect } from "react";
-import { CheckSquare, Plus, Loader2, Timer, CheckCircle, XCircle } from "lucide-react";
-import { Quiz, QuizQuestion, QuizDifficulty } from "@/types";
+import { CheckSquare, Trophy, RotateCcw, ChevronRight, Loader2, Sparkles, FileText, ArrowLeft } from "lucide-react";
 
-type View = "list" | "generate" | "taking" | "results";
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+interface QuizListItem {
+  id: string;
+  title: string;
+  _count?: { questions: number };
+}
+
+interface Quiz {
+  id: string;
+  title: string;
+  questions: Question[];
+}
+
+interface Doc { id: string; title: string; status: string; }
+
+const DIFFICULTIES = [
+  { value: "EASY", label: "Easy", desc: "Basic recall & comprehension" },
+  { value: "MEDIUM", label: "Medium", desc: "Application & analysis" },
+  { value: "HARD", label: "Hard", desc: "Synthesis & critical thinking" },
+];
+
+const QUESTION_COUNTS = [5, 8, 10, 15, 20];
 
 export default function QuizPage() {
-  const [view, setView] = useState<View>("list");
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [genForm, setGenForm] = useState({ documentId: "", difficulty: "MEDIUM" as QuizDifficulty, questionCount: 10 });
+  const [quizzes, setQuizzes] = useState<QuizListItem[]>([]);
+  const [documents, setDocuments] = useState<Doc[]>([]);
+  const [selected, setSelected] = useState<Quiz | null>(null);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
 
-  useEffect(() => {
-    fetchQuizzes();
-    fetchDocuments();
-  }, []);
+  // Generation config state
+  const [genDoc, setGenDoc] = useState<Doc | null>(null);
+  const [genDifficulty, setGenDifficulty] = useState("MEDIUM");
+  const [genCount, setGenCount] = useState(10);
 
-  async function fetchQuizzes() {
-    const res = await fetch("/api/quiz");
-    const data = await res.json();
-    setQuizzes(data.data ?? []);
-  }
+  const fetchAll = () => {
+    Promise.all([
+      fetch("/api/quiz").then((r) => r.json()),
+      fetch("/api/documents").then((r) => r.json()),
+    ]).then(([quizData, docData]) => {
+      setQuizzes(quizData.data ?? quizData.quizzes ?? []);
+      const docs = (docData.data ?? docData.documents ?? []).filter((d: Doc) => d.status === "READY");
+      setDocuments(docs);
+    }).finally(() => setLoading(false));
+  };
 
-  async function fetchDocuments() {
-    const res = await fetch("/api/documents?status=READY");
-    const data = await res.json();
-    setDocuments(data.data ?? []);
-  }
+  useEffect(() => { fetchAll(); }, []);
 
-  async function generateQuiz() {
-    if (!genForm.documentId) return;
-    setIsLoading(true);
+  const openQuiz = async (quizId: string) => {
+    setLoadingQuiz(true);
+    try {
+      const res = await fetch(`/api/quiz/${quizId}`);
+      const data = await res.json();
+      setSelected(data.data ?? data.quiz ?? data);
+    } catch {
+      alert("Failed to load quiz.");
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+
+  const generateQuiz = async () => {
+    if (!genDoc) return;
+    setGenerating(true);
     try {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(genForm),
+        body: JSON.stringify({ documentId: genDoc.id, difficulty: genDifficulty, questionCount: genCount }),
       });
-      const data = await res.json();
-      if (data.data) {
-        setActiveQuiz(data.data);
-        setAnswers({});
-        setView("taking");
-        await fetchQuizzes();
+      if (res.ok) {
+        fetchAll();
+        setShowGenerate(false);
+        setGenDoc(null);
+      } else {
+        alert("Failed to generate quiz. Try again.");
       }
+    } catch {
+      alert("Something went wrong generating the quiz.");
     } finally {
-      setIsLoading(false);
+      setGenerating(false);
     }
-  }
+  };
 
-  async function submitQuiz() {
-    if (!activeQuiz) return;
-    setIsLoading(true);
-    const answersList = Object.entries(answers).map(([questionId, answer]) => ({ questionId, answer }));
-    try {
-      const res = await fetch(`/api/quiz/${activeQuiz.id}/attempt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answersList }),
-      });
-      const data = await res.json();
-      setResults(data.data);
-      setView("results");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const score = selected ? selected.questions.filter((q, i) => answers[i] === q.correctAnswer).length : 0;
+  const reset = () => { setSelected(null); setCurrent(0); setAnswers({}); setSubmitted(false); };
 
-  if (view === "generate") {
-    return (
-      <div className="p-6 max-w-lg">
-        <button onClick={() => setView("list")} className="mb-6 text-sm text-muted-foreground hover:text-foreground">← Back</button>
-        <h1 className="text-2xl font-bold mb-6">Generate Quiz</h1>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Document</label>
-            <select
-              value={genForm.documentId}
-              onChange={(e) => setGenForm((p) => ({ ...p, documentId: e.target.value }))}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Select a document...</option>
-              {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-            </select>
+  if (loading) return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center h-14 px-6 border-b border-border glass shrink-0">
+        <CheckSquare className="h-4 w-4 text-muted-foreground mr-2" />
+        <h1 className="text-sm font-medium text-foreground">Quizzes</h1>
+      </div>
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  );
+
+  if (submitted && selected) return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center h-14 px-6 border-b border-border glass shrink-0">
+        <CheckSquare className="h-4 w-4 text-muted-foreground mr-2" />
+        <h1 className="text-sm font-medium text-foreground">Quizzes</h1>
+      </div>
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto gold-glow">
+            <Trophy className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Difficulty</label>
-            <div className="grid grid-cols-3 gap-2">
-              {(["EASY", "MEDIUM", "HARD"] as QuizDifficulty[]).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setGenForm((p) => ({ ...p, difficulty: d }))}
-                  className={`rounded-lg border py-2 text-sm font-medium transition-colors ${genForm.difficulty === d ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                >
-                  {d.charAt(0) + d.slice(1).toLowerCase()}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-xl font-medium text-foreground">Quiz complete</h2>
+            <p className="text-sm text-muted-foreground mt-1">{selected.title}</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Number of questions: {genForm.questionCount}</label>
-            <input
-              type="range" min={5} max={20} value={genForm.questionCount}
-              onChange={(e) => setGenForm((p) => ({ ...p, questionCount: +e.target.value }))}
-              className="w-full"
-            />
+          <div className="rounded-xl border border-border bg-card p-6">
+            <p className="text-4xl font-medium text-foreground">{score}<span className="text-xl text-muted-foreground">/{selected.questions.length}</span></p>
+            <p className="text-sm text-muted-foreground mt-1">{Math.round((score / selected.questions.length) * 100)}% correct</p>
           </div>
-          <button
-            onClick={generateQuiz}
-            disabled={isLoading || !genForm.documentId}
-            className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-          >
-            {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : "Generate Quiz"}
+          <div className="space-y-3 text-left max-h-72 overflow-y-auto">
+            {selected.questions.map((q, i) => (
+              <div key={q.id} className={`rounded-lg border p-3 ${answers[i] === q.correctAnswer ? "border-emerald-400/30 bg-emerald-400/5" : "border-red-400/30 bg-red-400/5"}`}>
+                <p className="text-sm font-medium text-foreground">{q.question}</p>
+                <p className="text-xs mt-1 text-muted-foreground">Your answer: <span className={answers[i] === q.correctAnswer ? "text-emerald-400" : "text-red-400"}>{answers[i] ?? "Not answered"}</span></p>
+                {answers[i] !== q.correctAnswer && <p className="text-xs text-emerald-400 mt-0.5">Correct: {q.correctAnswer}</p>}
+              </div>
+            ))}
+          </div>
+          <button onClick={reset} className="flex items-center gap-2 mx-auto px-4 py-2 rounded-md border border-border text-sm hover:bg-secondary transition-colors">
+            <RotateCcw className="h-4 w-4" /> Back to quizzes
           </button>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (view === "taking" && activeQuiz) {
-    const total = activeQuiz.questions?.length ?? 0;
-    const answered = Object.keys(answers).length;
+  if (selected) {
+    const q = selected.questions[current];
     return (
-      <div className="p-6 max-w-2xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-bold text-xl">{activeQuiz.title}</h1>
-          <span className="text-sm text-muted-foreground">{answered}/{total} answered</span>
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between h-14 px-6 border-b border-border glass shrink-0">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+            <h1 className="text-sm font-medium text-foreground">{selected.title}</h1>
+          </div>
+          <span className="text-xs text-muted-foreground">{current + 1} / {selected.questions.length}</span>
         </div>
-        <div className="space-y-6">
-          {activeQuiz.questions?.map((q: QuizQuestion, i: number) => (
-            <div key={q.id} className="rounded-xl border bg-card p-5">
-              <p className="font-medium mb-3"><span className="text-muted-foreground mr-2">Q{i + 1}.</span>{q.question}</p>
-              {q.type === "SHORT_ANSWER" ? (
-                <textarea
-                  value={answers[q.id] ?? ""}
-                  onChange={(e) => setAnswers((p) => ({ ...p, [q.id]: e.target.value }))}
-                  placeholder="Type your answer..."
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-primary outline-none"
-                  rows={3}
-                />
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${((current + 1) / selected.questions.length) * 100}%` }} />
+            </div>
+            <div className="rounded-xl border border-border bg-card p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Question {current + 1}</p>
+              <p className="text-base font-medium text-foreground leading-relaxed">{q.question}</p>
+            </div>
+            <div className="space-y-2">
+              {q.options.map((opt) => (
+                <button key={opt} onClick={() => setAnswers((prev) => ({ ...prev, [current]: opt }))} className={`w-full text-left rounded-xl border px-4 py-3.5 text-sm transition-colors ${answers[current] === opt ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-card text-foreground hover:border-primary/30 hover:bg-secondary"}`}>
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrent((p) => Math.max(0, p - 1))} disabled={current === 0} className="px-4 py-2 rounded-md border border-border text-sm text-foreground hover:bg-secondary disabled:opacity-40 transition-colors">Previous</button>
+              {current < selected.questions.length - 1 ? (
+                <button onClick={() => setCurrent((p) => p + 1)} disabled={!answers[current]} className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">
+                  Next <ChevronRight className="h-4 w-4" />
+                </button>
               ) : (
-                <div className="space-y-2">
-                  {(q.options ?? ["True", "False"]).map((opt: string) => (
-                    <button
-                      key={opt}
-                      onClick={() => setAnswers((p) => ({ ...p, [q.id]: opt }))}
-                      className={`w-full text-left rounded-lg border px-4 py-2.5 text-sm transition-colors ${answers[q.id] === opt ? "border-primary bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
+                <button onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length < selected.questions.length} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">Submit quiz</button>
               )}
             </div>
-          ))}
+          </div>
         </div>
-        <button
-          onClick={submitQuiz}
-          disabled={isLoading || answered === 0}
-          className="mt-6 w-full rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-        >
-          {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Grading...</> : "Submit Quiz"}
-        </button>
-      </div>
-    );
-  }
-
-  if (view === "results" && results) {
-    return (
-      <div className="p-6 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-2">Quiz Results</h1>
-        <div className="rounded-xl border bg-card p-6 mb-6 text-center">
-          <div className="text-5xl font-bold text-primary mb-1">{Math.round(results.percentage)}%</div>
-          <p className="text-muted-foreground">{results.score} / {results.totalPoints} points</p>
-        </div>
-        <div className="space-y-3">
-          {results.gradedAnswers?.map((a: any, i: number) => (
-            <div key={i} className={`flex items-start gap-3 rounded-xl border p-4 ${a.isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
-              {a.isCorrect ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" /> : <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />}
-              <div>
-                <p className="text-sm font-medium">{a.isCorrect ? "Correct" : "Incorrect"}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Your answer: {a.answer || "(no answer)"}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => setView("list")} className="mt-6 w-full rounded-lg border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
-          Back to Quizzes
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Quizzes</h1>
-          <p className="mt-1 text-muted-foreground">Test your knowledge with AI-generated questions</p>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between h-14 px-6 border-b border-border glass shrink-0">
+        <div className="flex items-center gap-2">
+          <CheckSquare className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium text-foreground">Quizzes</h1>
         </div>
-        <button
-          onClick={() => setView("generate")}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Generate Quiz
+        <button onClick={() => { setShowGenerate((p) => !p); setGenDoc(null); }} disabled={documents.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-40 transition-all duration-200">
+          <Sparkles className="h-3.5 w-3.5" /> Generate quiz
         </button>
       </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <div>
+            <h2 className="text-lg font-medium text-foreground">Your quizzes</h2>
+            <p className="text-sm text-muted-foreground mt-1">Select a quiz to test your knowledge.</p>
+          </div>
 
-      {quizzes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <CheckSquare className="mb-4 h-12 w-12 text-muted-foreground/40" />
-          <h2 className="font-semibold mb-1">No quizzes yet</h2>
-          <p className="text-sm text-muted-foreground mb-4">Generate your first quiz from an uploaded document</p>
-          <button onClick={() => setView("generate")} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            Generate Quiz
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quizzes.map((quiz: any) => (
-            <div key={quiz.id} className="rounded-xl border bg-card p-5 hover:shadow-sm transition-shadow">
-              <p className="font-semibold truncate">{quiz.title}</p>
-              <p className="text-sm text-muted-foreground mt-1">{quiz.document?.title}</p>
-              <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{quiz._count?.questions ?? 0} questions</span>
-                <span>·</span>
-                <span className={`font-medium ${quiz.difficulty === "EASY" ? "text-green-600" : quiz.difficulty === "HARD" ? "text-red-600" : "text-yellow-600"}`}>
-                  {quiz.difficulty}
-                </span>
-              </div>
-              <button
-                onClick={() => { setActiveQuiz(quiz); setAnswers({}); setView("taking"); }}
-                className="mt-4 w-full rounded-lg bg-primary/10 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-              >
-                Take Quiz
-              </button>
+          {showGenerate && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-4">
+              {!genDoc ? (
+                <>
+                  <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> Step 1: Pick a document
+                  </p>
+                  {documents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No ready documents yet. Upload one first.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {documents.map((doc) => (
+                        <button key={doc.id} onClick={() => setGenDoc(doc)} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-secondary transition-all duration-200 text-left">
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-sm text-foreground flex-1">{doc.title}</span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setGenDoc(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" /> {genDoc.title}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Difficulty</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {DIFFICULTIES.map((d) => (
+                        <button key={d.value} onClick={() => setGenDifficulty(d.value)} className={`rounded-lg border px-3 py-2.5 text-left transition-all duration-200 ${genDifficulty === d.value ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/30"}`}>
+                          <p className={`text-xs font-medium ${genDifficulty === d.value ? "text-primary" : "text-foreground"}`}>{d.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{d.desc}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Number of questions</p>
+                    <div className="flex gap-2">
+                      {QUESTION_COUNTS.map((n) => (
+                        <button key={n} onClick={() => setGenCount(n)} className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all duration-200 ${genCount === n ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/30"}`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button onClick={generateQuiz} disabled={generating} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 gold-glow">
+                    {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</> : <><Sparkles className="h-4 w-4" /> Generate {genCount} questions</>}
+                  </button>
+                </>
+              )}
             </div>
-          ))}
+          )}
+
+          {quizzes.length === 0 && !showGenerate ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center rounded-xl border border-border bg-card">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 gold-glow">
+                <CheckSquare className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-foreground">No quizzes yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Upload a document and generate a quiz to get started.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {quizzes.map((quiz) => (
+                <button key={quiz.id} onClick={() => openQuiz(quiz.id)} disabled={loadingQuiz} className="w-full flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 hover:border-primary/40 hover:shadow-sm transition-all text-left group disabled:opacity-60">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <CheckSquare className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{quiz.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{quiz._count?.questions ?? 0} questions</p>
+                  </div>
+                  {loadingQuiz ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
