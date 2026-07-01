@@ -12,7 +12,7 @@ function sanitizeText(text) {
   return text.replace(/\u0000/g, "");
 }
 
-export async function chunkText(text: string): Promise<string[]> {
+export async function chunkText(text: string): Promise<string[]>: Promise<string[]> {
   return splitter.splitText(text);
 }
 

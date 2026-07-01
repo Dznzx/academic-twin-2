@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const syne = Syne({ subsets: ["latin"], variable: "--font-syne", weight: ["400","600","700","800"] });
 
 export const metadata: Metadata = {
-  title: "Academic Twin — Your AI Learning Companion",
+  title: "Academic Twin — AI-Powered Study Platform",
   description: "Upload your study materials and get a personalized AI academic assistant that answers questions, generates quizzes, creates flashcards, and tracks your progress.",
   keywords: ["AI", "education", "learning", "study", "quiz", "flashcards", "RAG"],
 };
