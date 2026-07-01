@@ -37,21 +37,22 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-56 flex-col border-r border-border glass">
-      <div className="flex h-14 items-center gap-3 border-b border-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary gold-glow">
-          <Brain className="h-4 w-4 text-primary-foreground" />
+    <aside className="flex h-full w-56 flex-col border-r glass" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+      {/* Logo */}
+      <div className="flex h-14 items-center gap-3 px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#5b7fff,#22d3ee)", boxShadow: "0 0 20px rgba(91,127,255,0.4)" }}>
+          <Brain className="h-4 w-4 text-white" />
         </div>
         <div>
-          <p className="text-sm font-medium leading-none text-foreground">Academic Twin</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">AI Learning Platform</p>
+          <p className="text-sm font-semibold leading-none" style={{ fontFamily: "Syne, sans-serif", color: "#eef0f8" }}>Academic Twin</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "#7a82a0" }}>AI Learning Platform</p>
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         {navSections.map((section) => (
-          <div key={section.label} className="slide-in">
-            <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <div key={section.label}>
+            <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#4a5070" }}>
               {section.label}
             </p>
             <ul className="space-y-0.5">
@@ -61,15 +62,20 @@ export default function Sidebar() {
                   <li key={href}>
                     <Link
                       href={href}
-                      className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-200 ${
-                        active
-                          ? "bg-primary/15 text-primary font-medium gold-border border border-primary/20"
-                          : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
-                      }`}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-200"
+                      style={active ? {
+                        background: "rgba(91,127,255,0.12)",
+                        color: "#5b7fff",
+                        fontWeight: 500,
+                        border: "1px solid rgba(91,127,255,0.2)",
+                      } : {
+                        color: "#7a82a0",
+                        border: "1px solid transparent",
+                      }}
                     >
-                      <Icon className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${active ? "text-primary" : ""}`} />
+                      <Icon className="h-4 w-4 flex-shrink-0" />
                       {label}
-                      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full" style={{ background: "#5b7fff" }} />}
                     </Link>
                   </li>
                 );
@@ -79,12 +85,12 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-border p-3">
-        <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-secondary transition-all duration-200 cursor-pointer">
+      <div className="p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 cursor-pointer transition-all duration-200 hover:bg-white/5">
           <UserButton afterSignOutUrl="/" />
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate text-foreground">My Account</p>
-            <p className="text-[11px] text-muted-foreground">Settings & profile</p>
+            <p className="text-sm font-medium truncate" style={{ color: "#eef0f8" }}>My Account</p>
+            <p className="text-[11px]" style={{ color: "#7a82a0" }}>Settings & profile</p>
           </div>
         </div>
       </div>
