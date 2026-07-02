@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     const content = document.chunks.map((c) => c.content).join("\n\n");
-    const summary = await summarizeContent(content, type, document.title);
+    const summary = await summarizeContent(content, document.title, type as SummaryType);
 
     return NextResponse.json({ data: { summary, type } });
   } catch (error) {
