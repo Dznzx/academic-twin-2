@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // src/app/api/documents/[id]/summarize/route.ts
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
