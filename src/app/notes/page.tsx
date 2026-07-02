@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-"use client";
 import { useState, useEffect } from "react";
 import { NotebookPen, Sparkles, FileText, ArrowLeft, Loader2, Trash2, ChevronRight, Layers } from "lucide-react";
 
