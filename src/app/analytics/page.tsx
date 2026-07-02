@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 "use client";
 import { useEffect, useState } from "react";
 import { BarChart2, Clock, CheckSquare, FileText, MessageSquare, Layers, Flame, TrendingUp, Loader2 } from "lucide-react";

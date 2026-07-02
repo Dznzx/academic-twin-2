@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db/prisma";
 import { redirect } from "next/navigation";
