@@ -1,24 +1,21 @@
-// src/app/api/study-planner/route.ts
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import { openai } from "@/lib/ai/openai";
+import Groq from "groq-sdk";
 
-// GET — list study plans for user
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 export async function GET(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
     if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
     const plans = await prisma.studyPlan.findMany({
       where: { userId: user.id },
       include: { tasks: { orderBy: { dueDate: "asc" } } },
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json({ data: plans });
   } catch (error) {
     console.error("[GET /api/study-planner]", error);
@@ -26,12 +23,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST — create a new study plan (manual or AI-generated)
 export async function POST(req: NextRequest) {
   try {
     const { userId: clerkId } = await auth();
     if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const user = await prisma.user.findUnique({ where: { clerkId } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -40,47 +35,32 @@ export async function POST(req: NextRequest) {
 
     let finalTasks = tasks ?? [];
 
-    // AI-generated plan
     if (generateWithAI && subjects) {
       const analytics = await prisma.userAnalytics.findUnique({
         where: { userId: user.id },
         include: { weakTopics: true },
       });
-
-      const weakTopicsStr = analytics?.weakTopics.map((t) => t.topic).join(", ") ?? "none identified yet";
+      const weakTopicsStr = analytics?.weakTopics?.map((t: any) => t.topic).join(", ") ?? "none identified yet";
 
       const prompt = `You are an expert academic study planner.
-
 Create a study plan from ${startDate} to ${examDate ?? endDate}.
 Subjects to cover: ${subjects}
 Known weak topics: ${weakTopicsStr}
-Average quiz score: ${Math.round(analytics?.avgQuizScore ?? 0)}%
-
 Generate a realistic daily study schedule. Each task should be specific and actionable.
+Respond ONLY with a valid JSON array of tasks, no markdown:
+[{"title":"Review Neural Networks","description":"Focus on backpropagation","dueDate":"2024-06-01T09:00:00Z","duration":45,"priority":"HIGH","subject":"Machine Learning"}]`;
 
-Respond ONLY with a JSON array of tasks:
-[
-  {
-    "title": "Review Neural Networks — Backpropagation",
-    "description": "Focus on chain rule and gradient flow",
-    "dueDate": "2024-06-01T09:00:00Z",
-    "duration": 45,
-    "priority": "HIGH",
-    "subject": "Machine Learning"
-  }
-]
-
-Return ONLY the JSON array.`;
-
-      const response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o",
+      const response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
         temperature: 0.7,
+        max_tokens: 2000,
       });
 
       try {
-        const parsed = JSON.parse(response.choices[0].message.content ?? "{}");
+        const raw = response.choices[0].message.content ?? "[]";
+        const clean = raw.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
         finalTasks = Array.isArray(parsed) ? parsed : parsed.tasks ?? [];
       } catch {
         finalTasks = [];
@@ -97,7 +77,7 @@ Return ONLY the JSON array.`;
           create: finalTasks.map((t: any) => ({
             title: t.title,
             description: t.description,
-            dueDate: new Date(t.dueDate),
+            dueDate: t.dueDate ? new Date(t.dueDate) : new Date(),
             duration: t.duration ?? 30,
             priority: t.priority ?? "MEDIUM",
             status: "PENDING",
