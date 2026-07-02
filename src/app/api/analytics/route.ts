@@ -1,7 +1,8 @@
-// src/app/api/analytics/route.ts
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,11 +16,9 @@ export async function GET(req: NextRequest) {
       where: { userId: user.id },
       include: {
         weakTopics: { orderBy: { score: "asc" }, take: 5 },
-        studySessions: { orderBy: { date: "desc" }, take: 30 },
       },
     });
 
-    // Get quiz performance over time
     const recentAttempts = await prisma.quizAttempt.findMany({
       where: { userId: user.id },
       orderBy: { completedAt: "desc" },
@@ -27,7 +26,6 @@ export async function GET(req: NextRequest) {
       include: { quiz: { select: { title: true, difficulty: true } } },
     });
 
-    // Aggregate quiz scores by subject
     const subjectPerformance = await prisma.quizAttempt.groupBy({
       by: ["quizId"],
       where: { userId: user.id },
