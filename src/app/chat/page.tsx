@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, Plus, Zap } from "lucide-react";
 import { useUser } from "@clerk/nextjs";

@@ -1,3 +1,4 @@
+"use client";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";

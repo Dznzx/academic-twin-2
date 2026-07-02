@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { CheckSquare, Trophy, RotateCcw, ChevronRight, Loader2, Sparkles, FileText, ArrowLeft } from "lucide-react";
 
