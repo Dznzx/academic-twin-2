@@ -80,7 +80,7 @@ export default function FlashcardsPage() {
   const reset = () => { setSelected(null); setIndex(0); setFlipped(false); setKnown(new Set()); };
   const next = () => { if (!selected) return; setIndex((p) => Math.min(p + 1, getCards(selected).length - 1)); setFlipped(false); };
   const prev = () => { setIndex((p) => Math.max(p - 1, 0)); setFlipped(false); };
-  const markKnown = () => { setKnown((p) => new Set([...p, index])); next(); };
+  const markKnown = () => { setKnown((p) => { const s = new Set(Array.from(p)); s.add(index); return s; }); next(); };
   const markUnknown = () => next();
 
   if (loading) return (
