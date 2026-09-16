@@ -1,6 +1,14 @@
 # 🧠 Academic Twin — AI-Powered Personalized Learning Platform
 
-An intelligent study companion that understands your uploaded materials, tracks progress, and provides personalized academic assistance powered by RAG + GPT-4o.
+An intelligent study companion that understands your uploaded materials, tracks progress, and provides personalized academic assistance powered by RAG over Llama 3.3 70B.
+
+<p align="center">
+  <a href="https://academic-twin-rouge.vercel.app"><b>Live demo →</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot.png" width="820" alt="Academic Twin landing page" />
+</p>
 
 ---
 
@@ -23,8 +31,8 @@ An intelligent study companion that understands your uploaded materials, tracks 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/yourusername/academic-twin
-cd academic-twin
+git clone https://github.com/Dznzx/academic-twin-2
+cd academic-twin-2
 npm install
 ```
 
@@ -57,7 +65,8 @@ Open [http://localhost:3000](http://localhost:3000)
 | Service | Purpose | Get it at |
 |---|---|---|
 | **Clerk** | Authentication | [clerk.com](https://clerk.com) |
-| **OpenAI** | GPT-4o + Embeddings | [platform.openai.com](https://platform.openai.com) |
+| **Groq** | Llama 3.3 70B inference | [console.groq.com](https://console.groq.com) |
+| **Google AI** | text-embedding-004 | [aistudio.google.com](https://aistudio.google.com) |
 | **Pinecone** | Vector database | [pinecone.io](https://pinecone.io) |
 | **Supabase** | PostgreSQL + Storage | [supabase.com](https://supabase.com) |
 
@@ -89,7 +98,7 @@ src/
 │   ├── ui/                   # Button, Card, Badge, etc.
 │   └── upload/               # DocumentCard
 ├── lib/
-│   ├── ai/                   # OpenAI, Pinecone, RAG, generators
+│   ├── ai/                   # LLM clients, Pinecone, RAG, generators
 │   ├── db/                   # Prisma client
 │   └── utils/                # Helpers
 ├── hooks/                    # useDocuments, useAnalytics
@@ -116,11 +125,11 @@ Next.js API Routes (server-side)
    │                                       │
    │                               Text Chunking (LangChain)
    │                                       │
-   │                               OpenAI Embeddings
+   │                               Google Embeddings
    │                                       │
    │                               Pinecone Vector DB
    │
-   └─── AI Services ─────────────► OpenAI GPT-4o
+   └─── AI Services ─────────────► Groq · Llama 3.3 70B
             ├── RAG Chat (streaming)
             ├── Quiz Generator
             ├── Flashcard Generator
@@ -134,7 +143,7 @@ Next.js API Routes (server-side)
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Radix UI
 - **Backend**: Next.js API Routes, Node.js
 - **Database**: PostgreSQL via Supabase, Prisma ORM
-- **AI**: OpenAI GPT-4o, text-embedding-3-small, LangChain
+- **AI**: Groq (Llama 3.3 70B), Google text-embedding-004, LangChain
 - **Vector DB**: Pinecone
 - **Auth**: Clerk
 - **Storage**: Supabase Storage
