@@ -33,7 +33,8 @@ export default function UploadPage() {
       for (const file of files) {
         const form = new FormData();
         form.append("file", file);
-        await fetch("/api/documents", { method: "POST", body: form });
+        const res = await fetch("/api/documents", { method: "POST", body: form });
+        if (!res.ok) throw new Error("Upload failed");
       }
       setStatus("success");
       setTimeout(() => router.push("/dashboard"), 1500);
@@ -99,8 +100,8 @@ export default function UploadPage() {
                 ))}
               </ul>
               <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-                {status === "success" && <span className="flex items-center gap-1.5 text-xs text-green-600"><CheckCircle className="h-4 w-4" /> Uploaded successfully</span>}
-                {status === "error" && <span className="flex items-center gap-1.5 text-xs text-red-600"><AlertCircle className="h-4 w-4" /> Upload failed. Try again.</span>}
+                {status === "success" && <span className="flex items-center gap-1.5 text-xs text-green-400"><CheckCircle className="h-4 w-4" /> Uploaded successfully</span>}
+                {status === "error" && <span className="flex items-center gap-1.5 text-xs text-red-400"><AlertCircle className="h-4 w-4" /> Upload failed. Try again.</span>}
                 {status === "idle" && <span />}
                 <button
                   onClick={upload}

@@ -40,8 +40,15 @@ function renderMarkdown(md: string) {
     }
   };
 
+  function escapeHtml(text: string) {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   function formatInline(text: string) {
-    return text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+    return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
   }
 
   lines.forEach((line, i) => {

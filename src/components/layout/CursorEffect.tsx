@@ -1,8 +1,13 @@
 "use client";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function CursorEffect() {
+  const pathname = usePathname();
+  const isLandingPage = pathname === "/";
+
   useEffect(() => {
+    if (!isLandingPage) return;
     const dot = document.createElement("div");
     dot.style.cssText = "position:fixed;width:8px;height:8px;border-radius:50%;background:#5b7fff;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:width .15s,height .15s,opacity .15s;mix-blend-mode:screen;will-change:left,top;";
 
@@ -67,7 +72,7 @@ export default function CursorEffect() {
       ring.remove();
       obs.disconnect();
     };
-  }, []);
+  }, [isLandingPage]);
 
   return null;
 }

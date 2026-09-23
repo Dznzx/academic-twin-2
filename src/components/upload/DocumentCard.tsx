@@ -33,17 +33,22 @@ export default function DocumentCard({ doc, onDelete }: DocumentCardProps) {
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryType, setSummaryType] = useState("topic");
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState(false);
 
   async function generateSummary() {
     setLoadingSummary(true);
+    setSummaryError(false);
     try {
       const res = await fetch(`/api/documents/${doc.id}/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: summaryType }),
       });
+      if (!res.ok) throw new Error("Failed to summarize");
       const data = await res.json();
       setSummary(data.data?.summary ?? "");
+    } catch {
+      setSummaryError(true);
     } finally {
       setLoadingSummary(false);
     }
@@ -61,10 +66,10 @@ export default function DocumentCard({ doc, onDelete }: DocumentCardProps) {
               <p className="font-semibold truncate">{doc.title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{doc.fileName} · {formatBytes(doc.fileSize)}</p>
             </div>
-            <span className={`flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium ${
-              doc.status === "READY" ? "bg-green-100 text-green-700"
-              : doc.status === "FAILED" ? "bg-red-100 text-red-700"
-              : "bg-yellow-100 text-yellow-700"
+            <span className={`flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium border ${
+              doc.status === "READY" ? "bg-green-400/10 text-green-400 border-green-400/20"
+              : doc.status === "FAILED" ? "bg-red-400/10 text-red-400 border-red-400/20"
+              : "bg-yellow-400/10 text-yellow-400 border-yellow-400/20"
             }`}>
               {doc.status}
             </span>
@@ -142,6 +147,9 @@ export default function DocumentCard({ doc, onDelete }: DocumentCardProps) {
                 <div className="rounded-lg bg-muted p-4 text-sm leading-relaxed whitespace-pre-wrap">
                   {summary}
                 </div>
+              )}
+              {summaryError && (
+                <p className="text-xs text-red-400">Failed to generate summary. Try again.</p>
               )}
             </div>
           )}

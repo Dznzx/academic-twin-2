@@ -4,22 +4,33 @@ import Link from "next/link";
 export default function LandingPage() {
   return (
     <div style={{ background: "#04060f", color: "#eef0f8", fontFamily: "Inter, sans-serif", overflowX: "hidden" }}>
+      <style>{`
+        @media (max-width: 720px) {
+          .lp-nav { padding: 0 16px !important; }
+          .lp-nav-links { gap: 10px !important; }
+          .lp-nav-anchor { display: none !important; }
+          .lp-feature-row { grid-template-columns: 1fr !important; gap: 32px !important; padding: 56px 20px !important; direction: ltr !important; }
+          .lp-how-grid { grid-template-columns: 1fr !important; }
+          .lp-pricing-grid { grid-template-columns: 1fr !important; }
+          .lp-section-pad { padding: 64px 20px !important; }
+        }
+      `}</style>
 
       {/* NAV */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", background: "rgba(4,6,15,0.82)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <nav className="lp-nav" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", background: "rgba(4,6,15,0.82)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "#eef0f8" }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#5b7fff,#22d3ee)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 13, color: "#fff" }}>AT</div>
           <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 700, fontSize: 16, letterSpacing: "-0.02em" }}>Academic Twin</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="lp-nav-links" style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {["Features", "How it works", "Pricing"].map((item) => (
-            <a key={item} href={`#${item.toLowerCase().replace(" ", "-")}`} style={{ fontSize: 13, color: "#7a82a0", textDecoration: "none", transition: "color 0.2s" }}
+            <a key={item} className="lp-nav-anchor" href={`#${item.toLowerCase().replace(/ /g, "-")}`} style={{ fontSize: 13, color: "#7a82a0", textDecoration: "none", transition: "color 0.2s" }}
               onMouseEnter={e => (e.target as HTMLElement).style.color = "#eef0f8"}
               onMouseLeave={e => (e.target as HTMLElement).style.color = "#7a82a0"}
             >{item}</a>
           ))}
-          <Link href="/auth/login" style={{ fontSize: 13, color: "#7a82a0", textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", padding: "6px 14px", borderRadius: 8, transition: "all 0.2s" }}>Sign in</Link>
-          <Link href="/auth/register" style={{ fontSize: 13, fontWeight: 500, padding: "8px 20px", borderRadius: 9, background: "linear-gradient(135deg,#5b7fff,#8b5cf6)", color: "#fff", textDecoration: "none", boxShadow: "0 0 28px rgba(91,127,255,0.25)" }}>Get started free</Link>
+          <Link href="/auth/login" style={{ fontSize: 13, color: "#7a82a0", textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", padding: "6px 14px", borderRadius: 8, transition: "all 0.2s", whiteSpace: "nowrap" }}>Sign in</Link>
+          <Link href="/auth/register" style={{ fontSize: 13, fontWeight: 500, padding: "8px 20px", borderRadius: 9, background: "linear-gradient(135deg,#5b7fff,#8b5cf6)", color: "#fff", textDecoration: "none", boxShadow: "0 0 28px rgba(91,127,255,0.25)", whiteSpace: "nowrap" }}>Get started free</Link>
         </div>
       </nav>
 
@@ -137,7 +148,7 @@ export default function LandingPage() {
             flip: false,
           },
         ].map(({ label, title, sub, points, flip }) => (
-          <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", padding: "80px 48px", borderBottom: "1px solid rgba(255,255,255,0.06)", direction: flip ? "rtl" : "ltr" }}>
+          <div key={label} className="lp-feature-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center", padding: "80px 48px", borderBottom: "1px solid rgba(255,255,255,0.06)", direction: flip ? "rtl" : "ltr" }}>
             <div style={{ direction: "ltr" }}>
               <span style={{ display: "block", fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5b7fff", marginBottom: 14 }}>{label}</span>
               <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "clamp(1.8rem,3vw,2.4rem)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: 12, whiteSpace: "pre-line" }}>{title}</h2>
@@ -167,12 +178,12 @@ export default function LandingPage() {
       </div>
 
       {/* HOW IT WORKS */}
-      <section id="how-it-works" style={{ background: "#080c18", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "120px 48px" }}>
+      <section id="how-it-works" className="lp-section-pad" style={{ background: "#080c18", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "120px 48px" }}>
         <div style={{ textAlign: "center", marginBottom: 64 }}>
           <span style={{ display: "block", fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5b7fff", marginBottom: 14 }}>How it works</span>
           <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "clamp(2.2rem,4vw,3.2rem)", fontWeight: 800, letterSpacing: "-0.04em" }}>From upload to insight<br />in under 60 seconds.</h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 1, background: "rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="lp-how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 1, background: "rgba(255,255,255,0.06)", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
           {[
             { n: "01", title: "Upload your materials", desc: "Drop any PDF, lecture note, textbook, or assignment. Multiple files, multiple subjects — all organized automatically." },
             { n: "02", title: "AI builds your knowledge base", desc: "We extract, chunk, and embed your content into a personal vector database. Your documents become searchable semantic memory." },
@@ -192,7 +203,7 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" style={{ padding: "120px 48px", textAlign: "center" }}>
+      <section id="pricing" className="lp-section-pad" style={{ padding: "120px 48px", textAlign: "center" }}>
         <span style={{ display: "block", fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5b7fff", marginBottom: 14 }}>Pricing</span>
         <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "clamp(2.2rem,4vw,3.2rem)", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: 12 }}>Simple, honest pricing.</h2>
         <p style={{ color: "#7a82a0", fontWeight: 300, maxWidth: 380, margin: "0 auto 32px" }}>Start free. Upgrade when you need more. Cancel anytime.</p>
@@ -200,7 +211,7 @@ export default function LandingPage() {
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fbbf24", display: "inline-block" }} />
           Early bird pricing — locked in for life when you join now
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, maxWidth: 720, margin: "0 auto", background: "rgba(255,255,255,0.06)", borderRadius: 24, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="lp-pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, maxWidth: 720, margin: "0 auto", background: "rgba(255,255,255,0.06)", borderRadius: 24, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ background: "#04060f", padding: 40, textAlign: "left" }}>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4a5070", marginBottom: 16 }}>Free forever</div>
             <div style={{ fontFamily: "Syne, sans-serif", fontSize: "3rem", fontWeight: 800, letterSpacing: "-0.04em", marginBottom: 4 }}>₹0 <span style={{ fontSize: "1rem", fontWeight: 400, color: "#4a5070" }}>/ month</span></div>
@@ -237,7 +248,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA BOTTOM */}
-      <section style={{ padding: "160px 48px", textAlign: "center", position: "relative", overflow: "hidden", background: "#080c18", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section className="lp-section-pad" style={{ padding: "160px 48px", textAlign: "center", position: "relative", overflow: "hidden", background: "#080c18", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 60% at 50% 50%,rgba(91,127,255,0.09),transparent 70%)", pointerEvents: "none" }} />
         <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: "clamp(2.5rem,6vw,5.5rem)", fontWeight: 800, letterSpacing: "-0.05em", lineHeight: 0.95, marginBottom: 20, position: "relative", zIndex: 1 }}>
           Your AI twin is<br />
@@ -251,11 +262,11 @@ export default function LandingPage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ padding: "32px 48px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#04060f" }}>
+      <footer style={{ padding: "32px 48px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, background: "#04060f" }}>
         <span style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 13, color: "#4a5070" }}>Academic Twin by Veltron</span>
-        <div style={{ display: "flex", gap: 24 }}>
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {["Features", "How it works", "Pricing"].map((item) => (
-            <a key={item} href={`#${item.toLowerCase().replace(" ", "-")}`} style={{ fontSize: 12, color: "#4a5070", textDecoration: "none" }}>{item}</a>
+            <a key={item} href={`#${item.toLowerCase().replace(/ /g, "-")}`} style={{ fontSize: 12, color: "#4a5070", textDecoration: "none" }}>{item}</a>
           ))}
         </div>
         <span style={{ fontSize: 12, color: "#4a5070" }}>© 2025 Veltron Group</span>

@@ -119,23 +119,28 @@ export default async function DashboardPage() {
               ) : (
                 <ul className="space-y-1">
                   {documents.map((doc) => (
-                    <li key={doc.id} className="doc-item flex items-center gap-3 p-3 rounded-lg transition-all duration-200 cursor-pointer">
-                      <div className="h-8 w-8 rounded-md flex items-center justify-center shrink-0" style={{ background: "rgba(91,127,255,0.1)" }}>
-                        <FileText className="h-4 w-4" style={{ color: "#5b7fff" }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate" style={{ color: "#eef0f8" }}>{doc.title}</p>
-                        <p className="text-xs" style={{ color: "#4a5070" }}>{doc.subject}</p>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={
-                        doc.status === "READY"
-                          ? { background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }
-                          : doc.status === "FAILED"
-                          ? { background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }
-                          : { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }
-                      }>
-                        {doc.status}
-                      </span>
+                    <li key={doc.id}>
+                      <Link
+                        href={doc.status === "READY" ? `/chat?documentId=${doc.id}` : "/upload"}
+                        className="doc-item flex items-center gap-3 p-3 rounded-lg transition-all duration-200 cursor-pointer"
+                      >
+                        <div className="h-8 w-8 rounded-md flex items-center justify-center shrink-0" style={{ background: "rgba(91,127,255,0.1)" }}>
+                          <FileText className="h-4 w-4" style={{ color: "#5b7fff" }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate" style={{ color: "#eef0f8" }}>{doc.title}</p>
+                          <p className="text-xs" style={{ color: "#4a5070" }}>{doc.subject}</p>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={
+                          doc.status === "READY"
+                            ? { background: "rgba(74,222,128,0.1)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }
+                            : doc.status === "FAILED"
+                            ? { background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }
+                            : { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }
+                        }>
+                          {doc.status}
+                        </span>
+                      </Link>
                     </li>
                   ))}
                 </ul>

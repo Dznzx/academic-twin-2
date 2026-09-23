@@ -67,16 +67,16 @@ export default function AnalyticsPage() {
           ) : (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <StatCard label="Study time" value={fmt(analytics?.totalStudyTime ?? 0)} sub="Total logged" icon={Clock} color="bg-blue-50 text-blue-600" />
-                <StatCard label="Documents" value={analytics?.documentsUploaded ?? 0} sub="Uploaded" icon={FileText} color="bg-purple-50 text-purple-600" />
-                <StatCard label="Quizzes" value={analytics?.quizzesCompleted ?? 0} sub="Completed" icon={CheckSquare} color="bg-green-50 text-green-600" />
-                <StatCard label="Avg score" value={`${Math.round(analytics?.avgQuizScore ?? 0)}%`} sub="Quiz accuracy" icon={TrendingUp} color="bg-amber-50 text-amber-600" />
+                <StatCard label="Study time" value={fmt(analytics?.totalStudyTime ?? 0)} sub="Total logged" icon={Clock} color="bg-blue-400/10 text-blue-400" />
+                <StatCard label="Documents" value={analytics?.documentsUploaded ?? 0} sub="Uploaded" icon={FileText} color="bg-purple-400/10 text-purple-400" />
+                <StatCard label="Quizzes" value={analytics?.quizzesCompleted ?? 0} sub="Completed" icon={CheckSquare} color="bg-green-400/10 text-green-400" />
+                <StatCard label="Avg score" value={`${Math.round(analytics?.avgQuizScore ?? 0)}%`} sub="Quiz accuracy" icon={TrendingUp} color="bg-amber-400/10 text-amber-400" />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                <StatCard label="AI messages" value={analytics?.chatMessages ?? 0} sub="Sent to AI" icon={MessageSquare} color="bg-sky-50 text-sky-600" />
-                <StatCard label="Flashcards" value={analytics?.flashcardsReviewed ?? 0} sub="Reviewed" icon={Layers} color="bg-pink-50 text-pink-600" />
-                <StatCard label="Current streak" value={`${analytics?.currentStreak ?? 0} days`} sub={`Longest: ${analytics?.longestStreak ?? 0} days`} icon={Flame} color="bg-orange-50 text-orange-600" />
+                <StatCard label="AI messages" value={analytics?.chatMessages ?? 0} sub="Sent to AI" icon={MessageSquare} color="bg-sky-400/10 text-sky-400" />
+                <StatCard label="Flashcards" value={analytics?.flashcardsReviewed ?? 0} sub="Reviewed" icon={Layers} color="bg-pink-400/10 text-pink-400" />
+                <StatCard label="Current streak" value={`${analytics?.currentStreak ?? 0} days`} sub={`Longest: ${analytics?.longestStreak ?? 0} days`} icon={Flame} color="bg-orange-400/10 text-orange-400" />
               </div>
 
               <div className="rounded-xl border border-border bg-card p-5">
