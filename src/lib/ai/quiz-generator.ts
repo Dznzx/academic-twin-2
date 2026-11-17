@@ -1,7 +1,6 @@
-import Groq from "groq-sdk";
+import { groq } from "./groq";
 import { QuizQuestion, QuizDifficulty } from "@/types";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 interface GenerateQuizParams {
   content: string;

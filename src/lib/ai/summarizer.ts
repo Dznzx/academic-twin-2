@@ -1,6 +1,5 @@
-import Groq from "groq-sdk";
+import { groq } from "./groq";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export type SummaryType = "brief" | "detailed" | "bullet" | "academic";
 
