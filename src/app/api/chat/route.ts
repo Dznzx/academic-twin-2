@@ -2,10 +2,9 @@ export const dynamic = "force-dynamic";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
-import Groq from "groq-sdk";
+import { groq } from "@/lib/ai/groq";
 import { retrieveRelevantChunks, buildRAGPrompt } from "@/lib/ai/rag";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {

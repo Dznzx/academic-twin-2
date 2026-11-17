@@ -5,14 +5,22 @@ const globalForPinecone = globalThis as unknown as {
   pinecone: Pinecone | undefined;
 };
 
-export const pinecone =
-  globalForPinecone.pinecone ??
-  new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
-
-if (process.env.NODE_ENV !== "production") globalForPinecone.pinecone = pinecone;
+// Created on first use rather than at import time, so `next build` (which
+// loads every route module) works without PINECONE_API_KEY being set.
+export function getPinecone(): Pinecone {
+  if (!globalForPinecone.pinecone) {
+    if (!process.env.PINECONE_API_KEY) {
+      throw new Error("PINECONE_API_KEY is not set. Add it to .env.local.");
+    }
+    globalForPinecone.pinecone = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY,
+    });
+  }
+  return globalForPinecone.pinecone;
+}
 
 export function getPineconeIndex() {
-  return pinecone.index(process.env.PINECONE_INDEX ?? "academic-twin");
+  return getPinecone().index(process.env.PINECONE_INDEX ?? "academic-twin");
 }
 
 /**
